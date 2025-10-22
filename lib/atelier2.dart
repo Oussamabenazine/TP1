@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+// Importez la page de détails
+import 'atelier3.dart'; 
+// import 'atelier1.dart'; // Not needed; removed to fix unused import warning
 
-// Modèle de données Product (Identique à avant)
+// Modèle de données Product
 class Product {
   final String name;
   final double price;
@@ -33,20 +36,17 @@ class ProductListPageM3 extends StatelessWidget {
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
-        
-        // 1. AJOUT DU BOUTON VERS LA PAGE DE PROFIL
         actions: [
+          // Bouton vers le profil (navigation principale)
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () {
-              // Navigue vers la route '/profile' (Atelier 1)
               Navigator.pushReplacementNamed(context, '/profile');
             },
             tooltip: 'Gérer le profil',
           ),
         ],
       ),
-      // Reste du code de la liste de produits (Identique à avant)
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: products.length,
@@ -55,99 +55,108 @@ class ProductListPageM3 extends StatelessWidget {
           
           return Card(
             margin: const EdgeInsets.only(bottom: 16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Image avec badge "Nouveau"
-                  Stack(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: NetworkImage(product.image),
-                            fit: BoxFit.cover,
+            // NOUVEAU: Rend la carte cliquable pour naviguer
+            child: InkWell( 
+              onTap: () {
+                // Navigation vers la page de détails en passant le produit
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProductDetailPage(product: product),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Image avec badge "Nouveau" (Identique)
+                    Stack(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            image: DecorationImage(
+                              image: NetworkImage(product.image),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
-                      ),
-                      if (product.isNew)
-                        Positioned(
-                          top: 4,
-                          left: 4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'NEW',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                        if (product.isNew)
+                          Positioned(
+                            top: 4,
+                            left: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'NEW',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-
-                  // Informations du produit
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product.name,
-                          style: textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.star, color: Colors.amber.shade600, size: 16),
-                            const SizedBox(width: 4),
-                            Text(product.rating.toString()),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${product.price}€',
-                          style: textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
-                          ),
-                        ),
                       ],
                     ),
-                  ),
+                    const SizedBox(width: 16),
 
-                  // Bouton d'action Material 3
-                  Column(
-                    children: [
-                       FilledButton.icon(
-                          onPressed: () {
-                            debugPrint('Ajouter ${product.name} au panier');
-                          },
-                          icon: Icon(
-                            Icons.add_shopping_cart,
-                            color: colorScheme.onPrimary,
+                    // Informations du produit (Identique)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.name,
+                            style: textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          label: const Text("Acheter"),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(Icons.star, color: Colors.amber.shade600, size: 16),
+                              const SizedBox(width: 4),
+                              Text(product.rating.toString()),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${product.price}€',
+                            style: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+
+                    // Bouton d'action (Remplacé par l'action du Card)
+                    FilledButton.icon(
+                        onPressed: () {
+                          // Action d'achat rapide
+                          debugPrint('Ajouter ${product.name} au panier');
+                        },
+                        icon: Icon(
+                          Icons.add_shopping_cart,
+                          color: colorScheme.onPrimary,
+                        ),
+                        label: const Text("Acheter"),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
