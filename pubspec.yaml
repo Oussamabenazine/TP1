@@ -16,5 +16,11 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 assets:
   - images/profile_picture.png
+  - images/google.jpg
+  - images/iphone-15.jpg
+  - images/samsung.jpg
+
+
+
 flutter:
   uses-material-design: true

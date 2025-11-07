@@ -1,29 +1,77 @@
 import 'package:flutter/material.dart';
-// Importez la page de détails
-import 'atelier3.dart'; 
-// import 'atelier1.dart'; // Not needed; removed to fix unused import warning
+// Importe la page de détails pour la navigation
+import 'atelier4.dart'; 
 
-// Modèle de données Product
+// CLASSE PRODUCT : Définie UNIQUEMENT ici (Source unique de vérité)
 class Product {
   final String name;
   final double price;
-  final String image;
+  final String image; // Ce champ contient l'URL du fichier uploadé
   final bool isNew;
   final double rating;
+  final bool isFavorite; // Champ pour l'état favori
 
   const Product(
-    this.name, this.price, this.image, {this.isNew = false, this.rating = 0.0,}
+    this.name, 
+    this.price, 
+    this.image, 
+    {
+      this.isNew = false, 
+      this.rating = 0.0,
+      this.isFavorite = false, // Valeur par défaut à FALSE
+    }
   );
+  
+  // Méthode copyWith pour créer une nouvelle instance avec des valeurs modifiées (pour l'immutabilité)
+  Product copyWith({bool? isFavorite}) {
+    return Product(
+      name,
+      price,
+      image,
+      isNew: isNew,
+      rating: rating,
+      isFavorite: isFavorite ?? this.isFavorite,
+    );
+  }
 }
 
-class ProductListPageM3 extends StatelessWidget {
+// CONVERSION EN STATEFULWIDGET
+class ProductListPageM3 extends StatefulWidget {
   const ProductListPageM3({super.key});
 
-  final List<Product> products = const [
-    Product('iPhone 15', 999, 'https://picsum.photos/200/300', isNew: true, rating: 4.5,),
-    Product('Samsung Galaxy', 799, 'https://picsum.photos/201/300', isNew: false, rating: 4.2,),
-    Product('Google Pixel', 699, 'https://picsum.photos/202/300', isNew: true, rating: 4.7,),
+  @override
+  State<ProductListPageM3> createState() => _ProductListPageM3State();
+}
+
+class _ProductListPageM3State extends State<ProductListPageM3> {
+  // Déplacer la liste ici et la rendre mutable
+  List<Product> products = [
+    // Tous les produits sont initialement à isFavorite: false
+    Product('iPhone 15', 999.00, 'assets/images/iphone-15.jpg', isNew: true, rating: 4.5, isFavorite: false),
+    Product('Samsung Galaxy', 799.00, 'assets/images/samsung.jpg', isNew: true, rating: 4.2, isFavorite: false),
+    Product('Google Pixel', 699.00, 'assets/images/google.jpg', isNew: true, rating: 4.7, isFavorite: false),
   ];
+
+  // Méthode pour basculer l'état "favori" depuis la carte
+  void _toggleFavorite(int index) {
+    setState(() {
+      final oldProduct = products[index];
+      // Créer un nouveau produit avec l'état favori inversé et remplacer l'ancien
+      products[index] = oldProduct.copyWith(isFavorite: !oldProduct.isFavorite);
+    });
+  }
+  
+  // Méthode pour mettre à jour un produit après le retour de la page de détail
+  void _updateProduct(Product updatedProduct) {
+    setState(() {
+      // Trouver l'index du produit mis à jour
+      final index = products.indexWhere((p) => p.name == updatedProduct.name);
+      if (index != -1) {
+        products[index] = updatedProduct;
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -37,15 +85,15 @@ class ProductListPageM3 extends StatelessWidget {
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
         actions: [
-          // Bouton vers le profil (navigation principale)
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/profile');
-            },
-            tooltip: 'Gérer le profil',
-          ),
-        ],
+        IconButton(
+          icon: const Icon(Icons.person_outline),
+          onPressed: () {
+            // CORRECTION : Utiliser pushReplacementNamed pour revenir à la route du profil
+            Navigator.pushReplacementNamed(context, '/profile'); 
+          },
+          tooltip: 'Gérer le profil',
+        ),
+      ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -55,23 +103,26 @@ class ProductListPageM3 extends StatelessWidget {
           
           return Card(
             margin: const EdgeInsets.only(bottom: 16),
-            // NOUVEAU: Rend la carte cliquable pour naviguer
+            elevation: 2,
             child: InkWell( 
-              onTap: () {
-                // Navigation vers la page de détails en passant le produit
-                Navigator.push(
+              // MISE À JOUR : Attendre le résultat de la page de détail
+              onTap: () async {
+                final updatedProduct = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ProductDetailPage(product: product),
                   ),
                 );
+
+                if (updatedProduct != null && updatedProduct is Product) {
+                  _updateProduct(updatedProduct);
+                }
               },
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Image avec badge "Nouveau" (Identique)
                     Stack(
                       children: [
                         Container(
@@ -79,9 +130,20 @@ class ProductListPageM3 extends StatelessWidget {
                           height: 80,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            image: DecorationImage(
-                              image: NetworkImage(product.image),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network( // Image.network est nécessaire pour ces URLs
+                              product.image,
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Fallback visuel si l'image ne charge pas
+                                return Container(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  // ignore: deprecated_member_use
+                                  child: Center(child: Icon(Icons.image_not_supported, color: colorScheme.onSurfaceVariant.withOpacity(0.6))),
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -90,38 +152,27 @@ class ProductListPageM3 extends StatelessWidget {
                             top: 4,
                             left: 4,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.green,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Text(
                                 'NEW',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
                       ],
                     ),
                     const SizedBox(width: 16),
-
-                    // Informations du produit (Identique)
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            product.name,
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            product.name, 
+                            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
                           Row(
@@ -142,17 +193,21 @@ class ProductListPageM3 extends StatelessWidget {
                         ],
                       ),
                     ),
+                    
+                    // Icône de favori avec interaction
+                    IconButton(
+                      icon: Icon(
+                        product.isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: product.isFavorite ? colorScheme.error : colorScheme.outline, 
+                      ),
+                      onPressed: () => _toggleFavorite(index), // APPEL À LA MISE À JOUR D'ÉTAT
+                      tooltip: product.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                    ),
+                    const SizedBox(width: 8), 
 
-                    // Bouton d'action (Remplacé par l'action du Card)
                     FilledButton.icon(
-                        onPressed: () {
-                          // Action d'achat rapide
-                          debugPrint('Ajouter ${product.name} au panier');
-                        },
-                        icon: Icon(
-                          Icons.add_shopping_cart,
-                          color: colorScheme.onPrimary,
-                        ),
+                        onPressed: () {},
+                        icon: Icon(Icons.add_shopping_cart, color: colorScheme.onPrimary),
                         label: const Text("Acheter"),
                     ),
                   ],
