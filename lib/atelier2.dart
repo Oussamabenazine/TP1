@@ -1,42 +1,9 @@
 import 'package:flutter/material.dart';
+// Importe les modèles de données (Product et CartItem) et la page du panier (CartPage)
+import 'atelier6.dart'; 
 
 // =========================================================================
-// 1. MODÈLES DE DONNÉES
-// =========================================================================
-
-class Product {
-  final String name;
-  final double price;
-  final String image; 
-  final bool isNew;
-  final double rating;
-  final String description;
-
-  const Product(
-    this.name, 
-    this.price, 
-    this.image, 
-    {
-      this.isNew = false, 
-      this.rating = 0.0,
-      this.description = 'Ceci est une description détaillée du produit. Il offre les meilleures caractéristiques et technologies du moment. Veuillez noter que cette description est générique.',
-    }
-  );
-}
-
-// Article dans le panier
-class CartItem {
-  final Product product;
-  int quantity;
-
-  CartItem({required this.product, required this.quantity});
-
-  double get subtotal => product.price * quantity;
-}
-
-
-// =========================================================================
-// 2. WIDGET CARTE PRODUIT AVEC DÉTAILS EXTENSIBLES (ProductCardExpandable)
+// 1. WIDGET CARTE PRODUIT AVEC DÉTAILS EXTENSIBLES (ProductCardExpandable)
 // =========================================================================
 
 class ProductCardExpandable extends StatefulWidget {
@@ -68,6 +35,13 @@ class _ProductCardExpandableState extends State<ProductCardExpandable> {
     });
   }
   
+  // NOUVELLE MÉTHODE : Permet de modifier la quantité
+  /*void _updateQuantity(int delta) {
+    setState(() {
+      // Limiter la quantité entre 1 et 10
+      _quantity = (_quantity + delta).clamp(1, 10); 
+    });
+  }*/
   
   Widget _buildDetailRow(String label, String value, ColorScheme colorScheme, TextTheme textTheme) {
     return Padding(
@@ -96,12 +70,35 @@ class _ProductCardExpandableState extends State<ProductCardExpandable> {
     }
   }
 
-  Map<String, String> get _iphone15Specs => {
-    'Écran': '6.1 pouces Super Retina XDR',
-    'Processeur': 'A16 Bionic',
-    'Mémoire': '128 GB',
-    'Batterie': 'Jusqu\'à 20h de vidéo',
-  };
+  // MISE À JOUR : Fonction pour centraliser et rendre les spécifications dynamiques
+  Map<String, String> _getProductSpecs(String productName) {
+    switch (productName) {
+      case 'iPhone 15':
+        return {
+          'Écran': '6.1 pouces Super Retina XDR',
+          'Processeur': 'A16 Bionic',
+          'Mémoire': '128 GB',
+          'Batterie': 'Jusqu\'à 20h de vidéo',
+        };
+      case 'Samsung Galaxy':
+        return {
+          'Écran': '6.8 pouces Dynamic AMOLED 2X',
+          'Processeur': 'Snapdragon 8 Gen 2 for Galaxy',
+          'Mémoire': '256 GB',
+          'Batterie': '5000 mAh',
+        };
+      case 'Google Pixel':
+        return {
+          'Écran': '6.2 pouces Actua Display',
+          'Processeur': 'Google Tensor G3',
+          'Mémoire': '128 GB',
+          'Batterie': 'Autonomie de plus de 24h',
+        };
+      default:
+        return {}; // Retourne une map vide si non spécifié
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -182,12 +179,11 @@ class _ProductCardExpandableState extends State<ProductCardExpandable> {
                     children: [
                       IconButton(
                         icon: Icon(Icons.shopping_cart_outlined, color: colorScheme.secondary, size: 24),
-                        // MISE À JOUR : Ajoute l'article et rétracte la carte si elle est étendue.
+                        // Ajout au panier 
                         onPressed: () {
-                          // 1. Ajout au panier (appelle la méthode dans _ProductListPageM3State)
                           widget.onAddToCart(_quantity); 
                           
-                          // 2. Si la carte est étendue, la rétracter pour masquer le compteur/prix
+                          // Si la carte est étendue, la rétracter 
                           if (_isExpanded) {
                             _toggleExpansion();
                           }
@@ -225,17 +221,48 @@ class _ProductCardExpandableState extends State<ProductCardExpandable> {
                   Text(product.description, style: textTheme.bodyLarge),
                   const SizedBox(height: 20),
                   
-                  // Spécifications
+                  // Spécifications (MISE À JOUR DE LA LOGIQUE)
                   Text('Spécifications', style: textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  if (product.name == 'iPhone 15')
-                    ..._iphone15Specs.entries.map((entry) {
-                      return _buildDetailRow(entry.key, entry.value, colorScheme, textTheme);
-                    })
-                  else 
+                  // Afficher les spécifications dynamiquement
+                  ..._getProductSpecs(product.name).entries.map((entry) {
+                    return _buildDetailRow(entry.key, entry.value, colorScheme, textTheme);
+                  }).toList(),
+                  // Gérer le cas où aucune spécification n'est trouvée
+                  if (_getProductSpecs(product.name).isEmpty)
                     _buildDetailRow('Détails', 'Non spécifié', colorScheme, textTheme),
 
-                  
+                  const SizedBox(height: 20),
+/*
+                  // NOUVEAU : Contrôles de Quantité
+                  Text('Quantité', style: textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Bouton de décrémentation
+                      FloatingActionButton.small(
+                        heroTag: 'decrement-${product.name}', // HERO TAG NÉCESSAIRE pour éviter l'erreur
+                        onPressed: _quantity > 1 ? () => _updateQuantity(-1) : null,
+                        tooltip: 'Diminuer la quantité',
+                        child: const Icon(Icons.remove),
+                      ),
+                      const SizedBox(width: 20),
+                      // Affichage de la quantité
+                      Text(
+                        _quantity.toString(),
+                        style: textTheme.headlineMedium!.copyWith(color: colorScheme.primary),
+                      ),
+                      const SizedBox(width: 20),
+                      // Bouton d'incrémentation
+                      FloatingActionButton.small(
+                        heroTag: 'increment-${product.name}', // HERO TAG NÉCESSAIRE pour éviter l'erreur
+                        onPressed: _quantity < 10 ? () => _updateQuantity(1) : null,
+                        tooltip: 'Augmenter la quantité',
+                        child: const Icon(Icons.add),
+                      ),
+                    ],
+                  ),*/
                 ],
               ),
             ),
@@ -247,7 +274,7 @@ class _ProductCardExpandableState extends State<ProductCardExpandable> {
 }
 
 // =========================================================================
-// 3. WIDGET DE LA PAGE DE LISTE (ProductListPageM3)
+// 2. WIDGET DE LA PAGE DE LISTE (ProductListPageM3) - AUCUN CHANGEMENT ICI
 // =========================================================================
 
 class ProductListPageM3 extends StatefulWidget {
@@ -258,10 +285,11 @@ class ProductListPageM3 extends StatefulWidget {
 }
 
 class _ProductListPageM3State extends State<ProductListPageM3> {
+  // Product et CartItem sont importés de atelier6.dart
   final List<Product> products = const [
     Product('iPhone 15', 999.00, 'images/iphone-15.jpg', isNew: true, rating: 4.5, description: "Découvrez le iPhone 15, un produit haute performance conçu pour répondre à tous vos besoins. Design élégant et fonctionnalités avancées pour une expérience exceptionnelle."),
-    Product('Samsung Galaxy', 799.00, 'images/samsung.jpg', isNew: true, rating: 4.2),
-    Product('Google Pixel', 699.00, 'images/google.jpg', isNew: true, rating: 4.7),
+    Product('Samsung Galaxy', 799.00, 'images/samsung.jpg', isNew: true, rating: 4.2, description: "Le Samsung Galaxy S23 offre une expérience Android de pointe. Son design premium et son système de triple caméra en font un choix incontournable pour les amateurs de technologie."),
+    Product('Google Pixel', 699.00, 'images/google.jpg', isNew: true, rating: 4.7, description: "Le Google Pixel 8 est le roi de la photographie computationnelle. Intégrant le puissant chip Tensor G3, il offre une intelligence artificielle et une pureté logicielle inégalées."),
   ];
   
   // ignore: prefer_final_fields
@@ -278,8 +306,6 @@ class _ProductListPageM3State extends State<ProductListPageM3> {
       } else {
         _cart.add(CartItem(product: product, quantity: quantity));
       }
-      
-      // La modification de _cart déclenche l'actualisation du badge de l'AppBar.
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -306,18 +332,26 @@ class _ProductListPageM3State extends State<ProductListPageM3> {
     });
   }
 
-  void _showCartDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return CartDialog(
-          cartItems: _cart,
-          cartTotal: _cartTotal,
-          onQuantityChanged: _updateCartItemQuantity, 
-          onRemoveItem: _removeCartItem,
-        );
-      },
+  // MISE À JOUR : Navigation vers la page CartPage (atelier6.dart)
+  void _navigateToCartPage(BuildContext context) async {
+    // Utiliser Navigator.push pour aller à une nouvelle page
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (BuildContext context) {
+          // CartPage est importé de atelier6.dart
+          return CartPage( 
+            cartItems: _cart,
+            cartTotal: _cartTotal,
+            // Passer les fonctions pour permettre la modification du panier depuis la page CartPage
+            onQuantityChanged: _updateCartItemQuantity, 
+            onRemoveItem: _removeCartItem,
+          );
+        },
+      ),
     );
+    // Appeler setState() après le retour (pop) de la page du panier pour mettre à jour le badge.
+    setState(() {});
   }
 
   @override
@@ -337,10 +371,10 @@ class _ProductListPageM3State extends State<ProductListPageM3> {
             children: [
               IconButton(
                 icon: const Icon(Icons.shopping_cart_outlined),
-                onPressed: () => _showCartDialog(context),
+                onPressed: () => _navigateToCartPage(context), // MISE À JOUR de l'appel
                 tooltip: 'Voir le panier',
               ),
-              // Le badge s'actualise car _cart est modifié par _addToCart (qui appelle setState)
+              // Le badge s'actualise car _cart est modifié
               if (_cart.isNotEmpty)
                 Positioned(
                   right: 8,
@@ -353,7 +387,6 @@ class _ProductListPageM3State extends State<ProductListPageM3> {
                     ),
                     constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                     child: Text(
-                      // Afficher le nombre total d'articles (pas d'entrées uniques)
                       _cart.fold(0, (sum, item) => sum + item.quantity).toString(),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onError, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
@@ -388,134 +421,6 @@ class _ProductListPageM3State extends State<ProductListPageM3> {
           );
         },
       ),
-    );
-  }
-}
-
-// =========================================================================
-// 4. WIDGET DU DIALOGUE DU PANIER (CartDialog)
-// =========================================================================
-
-class CartDialog extends StatelessWidget {
-  final List<CartItem> cartItems;
-  final double cartTotal;
-  final Function(CartItem item, int newQuantity) onQuantityChanged;
-  final Function(CartItem item) onRemoveItem;
-
-  const CartDialog({
-    super.key,
-    required this.cartItems,
-    required this.cartTotal,
-    required this.onQuantityChanged,
-    required this.onRemoveItem,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return AlertDialog(
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('Votre Panier (${cartItems.length})', style: textTheme.titleLarge),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-      ),
-      contentPadding: const EdgeInsets.only(top: 10, left: 15, right: 15),
-      content: SizedBox(
-        width: double.maxFinite,
-        // Limiter la hauteur du contenu pour éviter le débordement sur les petits écrans
-        height: cartItems.isEmpty ? 150 : 300, 
-        child: cartItems.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.shopping_cart_outlined, size: 50, color: colorScheme.outline),
-                    const SizedBox(height: 10),
-                    Text("Votre panier est vide.", style: textTheme.bodyLarge),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: cartItems.length,
-                itemBuilder: (context, index) {
-                  final item = cartItems[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.asset(item.product.image, width: 50, height: 50, fit: BoxFit.cover),
-                        ),
-                        const SizedBox(width: 12),
-                        
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.product.name, style: textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                              Text('${item.product.price.toStringAsFixed(2)}€ x ${item.quantity}', style: textTheme.bodyMedium!.copyWith(color: colorScheme.onSurfaceVariant)),
-                            ],
-                          ),
-                        ),
-                        
-                        IconButton(
-                          icon: Icon(Icons.delete_outline, color: colorScheme.error),
-                          onPressed: () => onRemoveItem(item),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-      ),
-      actions: [
-        // Total et bouton Commander
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Total :', style: textTheme.titleLarge),
-                  Text(
-                    '${cartTotal.toStringAsFixed(2)}€',
-                    style: textTheme.headlineSmall!.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: cartItems.isNotEmpty
-                      ? () {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Commande en cours...')),
-                          );
-                        }
-                      : null,
-                  icon: const Icon(Icons.payment),
-                  label: const Text('Passer à la commande'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
