@@ -227,7 +227,7 @@ class _ProductCardExpandableState extends State<ProductCardExpandable> {
                   // Afficher les spécifications dynamiquement
                   ..._getProductSpecs(product.name).entries.map((entry) {
                     return _buildDetailRow(entry.key, entry.value, colorScheme, textTheme);
-                  }).toList(),
+                  }),
                   // Gérer le cas où aucune spécification n'est trouvée
                   if (_getProductSpecs(product.name).isEmpty)
                     _buildDetailRow('Détails', 'Non spécifié', colorScheme, textTheme),
